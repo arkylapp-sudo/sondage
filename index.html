@@ -589,17 +589,45 @@
 
 <script>
 /* ══════════════════════════════════════════
-   DONNÉES & STOCKAGE
+   API & SESSION
 ══════════════════════════════════════════ */
-const STORAGE_KEY = 'arkyl_responses';
+const API_BASE = 'api.php';
+let SESSION_ID = null;
 
-function loadResponses() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch(e) { return []; }
+async function initSession() {
+  const res = await fetch(API_BASE + '?action=session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+  const data = await res.json();
+  SESSION_ID = data.session_id;
+  return data;
 }
-function saveResponses(arr) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+
+async function saveAnswer(questionIndex, answer) {
+  await fetch(API_BASE + '?action=save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: SESSION_ID, question_index: questionIndex, answer: JSON.stringify(answer) })
+  });
 }
+
+async function completeSession() {
+  await fetch(API_BASE + '?action=complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: SESSION_ID })
+  });
+}
+
+async function fetchStats() {
+  const res = await fetch(API_BASE + '?action=stats');
+  return await res.json();
+}
+
+// Init session au chargement
+initSession();
 
 /* ══════════════════════════════════════════
    SONDAGE
@@ -648,15 +676,20 @@ function prev(from, to) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function submitSurvey() {
+async function submitSurvey() {
   const free = document.getElementById('free-q5');
   if (!answers['q5']) answers['q5'] = {};
   answers['q5'].free = free ? free.value.trim() : '';
 
-  // Sauvegarder
-  const all = loadResponses();
-  all.push({ ts: Date.now(), answers: JSON.parse(JSON.stringify(answers)) });
-  saveResponses(all);
+  // Sauvegarder sur le serveur
+  const order_keys = ['q1','q2','q3','q4','q5'];
+  for (let i = 0; i < order_keys.length; i++) {
+    const q = order_keys[i];
+    if (answers[q]) {
+      await saveAnswer(i, answers[q]);
+    }
+  }
+  await completeSession();
 
   document.getElementById('q5').classList.remove('active');
   document.querySelector('.progress-wrap').style.display = 'none';
@@ -760,41 +793,44 @@ function closeDash() {
   document.body.style.overflow = '';
 }
 function resetData() {
-  if (confirm('Effacer toutes les réponses ? Cette action est irréversible.')) {
-    localStorage.removeItem(STORAGE_KEY);
-    renderDash();
-  }
+  alert('La suppression des données se fait directement dans la base de données Render.');
 }
 
-function renderDash() {
-  const all = loadResponses();
-  const total = all.length;
+async function renderDash() {
   const body = document.getElementById('dash-body');
+  body.innerHTML = '<p style="text-align:center;color:#8a7f74;margin-top:2rem;">Chargement…</p>';
+  const stats = await fetchStats();
+  const total = stats.completed_sessions || 0;
+  const rawAnswers = stats.answers || [];
 
-  // Calculer dernière réponse
-  let lastDate = '—';
-  if (total > 0) {
-    const d = new Date(all[all.length - 1].ts);
-    lastDate = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
-  }
-
-  // Compter toutes les chips par question
+  // Reconstruire la structure attendue par le dashboard
   const counts = {};
-  order.forEach(q => { counts[q] = {}; });
-  all.forEach(r => {
-    order.forEach(q => {
-      const chips = r.answers[q]?.chips || [];
-      chips.forEach(v => {
-        counts[q][v] = (counts[q][v] || 0) + 1;
-      });
+  ['q1','q2','q3','q4','q5'].forEach((q,i) => {
+    counts[q] = {};
+    rawAnswers.filter(r => parseInt(r.question_index) === i).forEach(r => {
+      try {
+        const ans = JSON.parse(r.answer);
+        const chips = ans.chips || [];
+        chips.forEach(v => { counts[q][v] = (counts[q][v] || 0) + parseInt(r.count); });
+      } catch(e) {}
     });
   });
 
-  // Réponses libres
   const frees = {};
-  ['q2','q4','q5'].forEach(q => {
-    frees[q] = all.map(r => r.answers[q]?.free).filter(Boolean);
+  ['q2','q4','q5'].forEach((q,i_) => {
+    const qi = ['q1','q2','q3','q4','q5'].indexOf(q);
+    frees[q] = rawAnswers.filter(r => parseInt(r.question_index) === qi).flatMap(r => {
+      try {
+        const ans = JSON.parse(r.answer);
+        return ans.free ? [ans.free] : [];
+      } catch(e) { return []; }
+    });
   });
+
+  // Dernière réponse (on n'a pas le timestamp détaillé dans les stats agrégées)
+  let lastDate = '—';
+
+  // (counts et frees déjà calculés depuis l'API)
 
   let html = '';
 
@@ -802,7 +838,7 @@ function renderDash() {
   html += `<div class="kpi-row">
     <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">Réponses totales</div></div>
     <div class="kpi"><div class="kpi-val">${lastDate}</div><div class="kpi-lbl">Dernière réponse</div></div>
-    <div class="kpi"><div class="kpi-val">${total > 0 ? Math.round(total / Math.max(1, daysSince(all[0].ts))) : 0}/j</div><div class="kpi-lbl">Moy. par jour</div></div>
+    <div class="kpi"><div class="kpi-val">${stats.total_sessions || 0}</div><div class="kpi-lbl">Sessions totales</div></div>
   </div>`;
 
   if (total === 0) {
@@ -930,3 +966,4 @@ function escHtml(s) {
 </script>
 </body>
 </html>
+
