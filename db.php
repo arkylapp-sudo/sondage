@@ -1,21 +1,10 @@
 <?php
 function getDB() {
-    $url = getenv('DATABASE_URL');
-    if (!$url) {
-        // Fallback avec les credentials directs
-        $host = getenv('DB_HOST') ?: 'dpg-d8u07anavr4c73a4p56g-a';
-        $port = getenv('DB_PORT') ?: '5432';
-        $dbname = getenv('DB_NAME') ?: 'sondage_zecv';
-        $user = getenv('DB_USER') ?: 'sondage_zecv_user';
-        $password = getenv('DB_PASSWORD') ?: '';
-        $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
-    } else {
-        // Parse DATABASE_URL postgresql://user:pass@host:port/dbname
-        $parts = parse_url($url);
-        $dsn = "pgsql:host={$parts['host']};port={$parts['port']};dbname=" . ltrim($parts['path'], '/') . ";sslmode=require";
-        $user = $parts['user'];
-        $password = $parts['pass'];
-    }
+    $url = 'postgresql://sondage_zecv_user:8mGbJLu9MlOmWT5bu6WbKaA7KrKUnKhn@dpg-d8u07anavr4c73a4p56g-a/sondage_zecv';
+    $parts = parse_url($url);
+    $dsn = "pgsql:host={$parts['host']};port=" . ($parts['port'] ?? 5432) . ";dbname=" . ltrim($parts['path'], '/') . ";sslmode=require";
+    $user = $parts['user'];
+    $password = $parts['pass'];
 
     try {
         $pdo = new PDO($dsn, $user, $password, [
