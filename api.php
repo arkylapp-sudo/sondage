@@ -119,7 +119,17 @@ switch ($action) {
         echo json_encode($stats);
         break;
 
+    // Effacer toutes les données
+    case 'reset':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $pdo->exec("DELETE FROM responses");
+            $pdo->exec("DELETE FROM sessions");
+            echo json_encode(['success' => true]);
+        }
+        break;
+
     default:
         http_response_code(400);
         echo json_encode(['error' => 'Action inconnue']);
 }
+
