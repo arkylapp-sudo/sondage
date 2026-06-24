@@ -1,0 +1,3 @@
+Options -Indexes
+AddHandler application/x-httpd-php .php
+DirectoryIndex index.html index.php
