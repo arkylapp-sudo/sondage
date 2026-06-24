@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sondage – Arkyl</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+      --ink:     #1a1612;
+      --canvas:  #f7f4ef;
+      --warm:    #e8e0d4;
+      --gold:    #c49a4a;
+      --gold-lt: #ddb96a;
+      --muted:   #8a7f74;
+      --white:   #ffffff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--canvas);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      padding: 2rem 1.5rem 1.6rem;
+      text-align: center;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      cursor: default;
+      user-select: none;
+    }
+    .tagline {
+      font-size: .78rem;
+      color: var(--muted);
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      margin-top: .35rem;
+    }
+
+    /* ── Intro ── */
+    .intro {
+      max-width: 680px;
+      margin: 3rem auto 2rem;
+      padding: 0 1.5rem;
+      text-align: center;
+    }
+    .intro h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      line-height: 1.2;
+      color: var(--ink);
+    }
+    .intro h1 em { color: var(--gold); font-style: italic; }
+    .intro p {
+      margin-top: 1rem;
+      font-size: .95rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      max-width: 680px;
+      margin: 0 auto 2.5rem;
+      padding: 0 1.5rem;
+    }
+    .progress-label {
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    .progress-bar {
+      height: 3px;
+      background: var(--warm);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-lt));
+      border-radius: 2px;
+      transition: width .4s ease;
+    }
+
+    /* ── Card ── */
+    .card {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+      display: none;
+    }
+    .card.active { display: block; }
+
+    .question-num {
+      font-size: .72rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: .7rem;
+    }
+    .question-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.2rem, 3vw, 1.65rem);
+      line-height: 1.35;
+      margin-bottom: 1.8rem;
+    }
+
+    /* ── Chip choices ── */
+    .choices { display: flex; flex-wrap: wrap; gap: .65rem; margin-bottom: 1.4rem; }
+    .choice {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .6rem 1.1rem;
+      border: 1.5px solid var(--warm);
+      border-radius: 50px;
+      background: var(--white);
+      font-size: .88rem;
+      cursor: pointer;
+      transition: border-color .2s, background .2s, color .2s;
+      user-select: none;
+    }
+    .choice:hover { border-color: var(--gold-lt); background: #fdf9f3; }
+    .choice.selected {
+      border-color: var(--gold);
+      background: var(--gold);
+      color: var(--white);
+    }
+    .choice .icon { font-size: 1rem; }
+
+    /* ── Textarea ── */
+    .free-label {
+      font-size: .78rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      padding: .85rem 1rem;
+      border: 1.5px solid var(--warm);
+      border-radius: 10px;
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      color: var(--ink);
+      resize: vertical;
+      transition: border-color .2s;
+    }
+    textarea:focus { outline: none; border-color: var(--gold); }
+    textarea::placeholder { color: #c2b8ae; }
+
+    /* ── Navigation ── */
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .72rem 1.6rem;
+      border: none;
+      border-radius: 50px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--warm);
+    }
+    .btn-ghost:hover { border-color: var(--muted); color: var(--ink); }
+    .btn-primary {
+      background: var(--ink);
+      color: var(--gold);
+    }
+    .btn-primary:hover { opacity: .85; }
+
+    /* ── Merci ── */
+    .merci {
+      display: none;
+      max-width: 680px;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+      text-align: center;
+    }
+    .merci.active { display: block; }
+    .merci-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .merci h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--ink);
+      margin-bottom: .8rem;
+    }
+    .merci h2 em { color: var(--gold); font-style: italic; }
+    .merci p { color: var(--muted); line-height: 1.7; font-size: .95rem; }
+    .merci-line {
+      width: 60px; height: 2px;
+      background: var(--gold);
+      margin: 1.6rem auto;
+    }
+
+    /* ── Divider ornament ── */
+    .ornament {
+      text-align: center;
+      color: var(--gold);
+      font-size: .9rem;
+      letter-spacing: .3em;
+      margin: 1.2rem 0 1.8rem;
+      opacity: .5;
+    }
+
+    /* ════════════════════════════════════
+       SECRET DASHBOARD
+    ════════════════════════════════════ */
+    #dashboard {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0e0c0a;
+      z-index: 9999;
+      overflow-y: auto;
+    }
+    #dashboard.open { display: block; }
+
+    .dash-header {
+      background: #1a1612;
+      border-bottom: 1px solid #2e2820;
+      padding: 1.4rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .dash-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      color: var(--gold);
+      letter-spacing: .12em;
+    }
+    .dash-title span {
+      font-family: 'DM Sans', sans-serif;
+      font-size: .7rem;
+      color: var(--muted);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      display: block;
+      margin-top: .15rem;
+    }
+    .dash-close {
+      background: #2e2820;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, color .2s;
+    }
+    .dash-close:hover { background: var(--gold); color: #0e0c0a; }
+
+    .dash-body {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* KPI strip */
+    .kpi-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+    }
+    .kpi {
+      flex: 1;
+      min-width: 130px;
+      background: #1a1612;
+      border: 1px solid #2e2820;
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+    }
+    .kpi-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .kpi-lbl {
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: .4rem;
+    }
+
+    /* Section */
+    .dash-section {
+      margin-bottom: 2.8rem;
+    }
+    .dash-section-title {
+      font-size: .72rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.2rem;
+      padding-bottom: .6rem;
+      border-bottom: 1px solid #2e2820;
+    }
+    .dash-q-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: #e8e0d4;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+
+    /* Bar chart rows */
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin-bottom: .7rem;
+    }
+    .bar-label {
+      width: 200px;
+      flex-shrink: 0;
+      font-size: .82rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-track {
+      flex: 1;
+      height: 10px;
+      background: #2e2820;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-lt));
+      border-radius: 6px;
+      transition: width .6s ease;
+    }
+    .bar-pct {
+      width: 42px;
+      text-align: right;
+      font-size: .82rem;
+      color: var(--gold-lt);
+      flex-shrink: 0;
+    }
+    .bar-count {
+      width: 28px;
+      text-align: right;
+      font-size: .75rem;
+      color: #4a4035;
+      flex-shrink: 0;
+    }
+
+    /* Pie donut via SVG */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .donut-wrap svg { flex-shrink: 0; }
+    .donut-legend { flex: 1; min-width: 180px; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: .55rem;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Réponses libres */
+    .free-list { list-style: none; }
+    .free-list li {
+      background: #1a1612;
+      border-left: 3px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: .7rem 1rem;
+      margin-bottom: .5rem;
+      font-size: .85rem;
+      color: #c2b8ae;
+      font-style: italic;
+    }
+    .free-empty {
+      color: #3a342c;
+      font-size: .82rem;
+      font-style: italic;
+    }
+
+    /* Reset btn */
+    .dash-reset {
+      background: #2e2820;
+      border: 1px solid #3a342c;
+      color: #8a7f74;
+      font-size: .78rem;
+      padding: .5rem 1rem;
+      border-radius: 50px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .2s, color .2s;
+    }
+    .dash-reset:hover { background: #c0392b22; color: #e74c3c; border-color: #e74c3c44; }
+
+    /* Secret flash */
+    @keyframes logoFlash {
+      0%   { color: var(--gold); }
+      50%  { color: var(--white); }
+      100% { color: var(--gold); }
+    }
+    .logo.flash { animation: logoFlash .25s ease; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="logo">Arkyl</div>
+  <div class="tagline">Sondage · Art &amp; Collection</div>
+</header>
+
+<div class="intro">
+  <h1>Comprendre vos <em>envies</em><br>face à l'art</h1>
+  <p>5 questions · 3 minutes · vos réponses nous aident à mieux vous servir.</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-label">Question <span id="prog-current">1</span> sur 5</div>
+  <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:20%"></div></div>
+</div>
+
+<!-- Q1 -->
+<div class="card active" id="q1">
+  <div class="question-num">Question 01</div>
+  <div class="question-text">Avez-vous déjà acheté une œuvre artistique ?</div>
+  <div class="choices" data-q="q1" data-multi="false">
+    <div class="choice" data-val="oui"><span class="icon">✅</span> Oui</div>
+    <div class="choice" data-val="non"><span class="icon">❌</span> Non, jamais</div>
+    <div class="choice" data-val="envisage"><span class="icon">🤔</span> Pas encore, mais j'y pense</div>
+  </div>
+  <div class="nav">
+    <span></span>
+    <button class="btn btn-primary" onclick="next('q1','q2')">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="card" id="q2">
+  <div class="question-num">Question 02</div>
+  <div class="question-text">Si oui — pourquoi l'avez-vous achetée ?</div>
+  <div class="ornament">· · ·</div>
+  <div class="choices" data-q="q2" data-multi="true">
+    <div class="choice" data-val="coup_coeur"><span class="icon">❤️</span> Coup de cœur esthétique</div>
+    <div class="choice" data-val="investissement"><span class="icon">📈</span> Investissement</div>
+    <div class="choice" data-val="cadeau"><span class="icon">🎁</span> Cadeau</div>
+    <div class="choice" data-val="deco"><span class="icon">🖼️</span> Décorer mon espace</div>
+    <div class="choice" data-val="artiste"><span class="icon">🤝</span> Soutenir un artiste</div>
+    <div class="choice" data-val="collection"><span class="icon">🏺</span> Constituer une collection</div>
+  </div>
+  <div class="free-label">Autre raison (optionnel)</div>
+  <textarea placeholder="Dites-nous en plus…" id="free-q2"></textarea>
+  <div class="nav">
+    <button class="btn btn-ghost" onclick="prev('q2','q1')">← Retour</button>
+    <button class="btn btn-primary" onclick="next('q2','q3')">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="card" id="q3">
+  <div class="question-num">Question 03</div>
+  <div class="question-text">Où avez-vous fait (ou envisagez-vous de faire) cet achat ?</div>
+  <div class="ornament">· · ·</div>
+  <div class="choices" data-q="q3" data-multi="true">
+    <div class="choice" data-val="galerie"><span class="icon">🏛️</span> Galerie d'art</div>
+    <div class="choice" data-val="foire"><span class="icon">🎪</span> Foire / salon d'art</div>
+    <div class="choice" data-val="en_ligne"><span class="icon">💻</span> Boutique en ligne</div>
+    <div class="choice" data-val="atelier"><span class="icon">🎨</span> Directement chez l'artiste</div>
+    <div class="choice" data-val="marche"><span class="icon">🛍️</span> Marché ou brocante</div>
+    <div class="choice" data-val="ventes_aux_encheres"><span class="icon">🔨</span> Ventes aux enchères</div>
+    <div class="choice" data-val="reseaux_sociaux"><span class="icon">📱</span> Réseaux sociaux</div>
+  </div>
+  <div class="nav">
+    <button class="btn btn-ghost" onclick="prev('q3','q2')">← Retour</button>
+    <button class="btn btn-primary" onclick="next('q3','q4')">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="card" id="q4">
+  <div class="question-num">Question 04</div>
+  <div class="question-text">Qu'est-ce qui vous freine le plus pour acheter une œuvre ?</div>
+  <div class="ornament">· · ·</div>
+  <div class="choices" data-q="q4" data-multi="true">
+    <div class="choice" data-val="prix"><span class="icon">💸</span> Le prix trop élevé</div>
+    <div class="choice" data-val="pas_espace"><span class="icon">📐</span> Pas d'espace chez moi</div>
+    <div class="choice" data-val="incertitude"><span class="icon">❓</span> Je ne sais pas si l'œuvre prendra de la valeur</div>
+    <div class="choice" data-val="confiance"><span class="icon">🔒</span> Manque de confiance en l'authenticité</div>
+    <div class="choice" data-val="gout"><span class="icon">🎯</span> Je ne sais pas ce qui me correspond</div>
+    <div class="choice" data-val="processus"><span class="icon">🔄</span> Le processus d'achat est trop complexe</div>
+    <div class="choice" data-val="livraison"><span class="icon">📦</span> La livraison / transport</div>
+  </div>
+  <div class="free-label">Autre frein (optionnel)</div>
+  <textarea placeholder="Exprimez-vous librement…" id="free-q4"></textarea>
+  <div class="nav">
+    <button class="btn btn-ghost" onclick="prev('q4','q3')">← Retour</button>
+    <button class="btn btn-primary" onclick="next('q4','q5')">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="card" id="q5">
+  <div class="question-num">Question 05</div>
+  <div class="question-text">Quelle information vous rassurerait le plus avant d'acheter une œuvre ?</div>
+  <div class="ornament">· · ·</div>
+  <div class="choices" data-q="q5" data-multi="true">
+    <div class="choice" data-val="certificat"><span class="icon">📜</span> Un certificat d'authenticité</div>
+    <div class="choice" data-val="biographie"><span class="icon">👤</span> La biographie et le parcours de l'artiste</div>
+    <div class="choice" data-val="valeur"><span class="icon">📊</span> L'évolution de la valeur de l'œuvre</div>
+    <div class="choice" data-val="avis"><span class="icon">⭐</span> Des avis d'autres acheteurs</div>
+    <div class="choice" data-val="retour"><span class="icon">↩️</span> Une politique de retour claire</div>
+    <div class="choice" data-val="conseil"><span class="icon">💬</span> Un conseil personnalisé d'un expert</div>
+    <div class="choice" data-val="paiement"><span class="icon">💳</span> Des options de paiement en plusieurs fois</div>
+  </div>
+  <div class="free-label">Autre élément rassurant (optionnel)</div>
+  <textarea placeholder="Partagez votre pensée…" id="free-q5"></textarea>
+  <div class="nav">
+    <button class="btn btn-ghost" onclick="prev('q5','q4')">← Retour</button>
+    <button class="btn btn-primary" onclick="submitSurvey()">Envoyer ✦</button>
+  </div>
+</div>
+
+<!-- Merci -->
+<div class="merci" id="merci">
+  <div class="merci-icon">✦</div>
+  <h2>Merci pour votre <em>contribution</em></h2>
+  <div class="merci-line"></div>
+  <p>Vos réponses nous aident à construire une expérience d'achat d'art<br>qui vous correspond vraiment.<br><br>À très bientôt sur <strong>Arkyl</strong>.</p>
+</div>
+
+<!-- ════════════ DASHBOARD SECRET ════════════ -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div class="dash-title">
+      Arkyl · Tableau de bord
+      <span>Données sondage — accès privé</span>
+    </div>
+    <div style="display:flex;gap:.6rem;align-items:center;">
+      <button class="dash-reset" onclick="resetData()">🗑 Effacer les données</button>
+      <button class="dash-close" onclick="closeDash()">✕</button>
+    </div>
+  </div>
+  <div class="dash-body" id="dash-body">
+    <!-- Généré par JS -->
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   DONNÉES & STOCKAGE
+══════════════════════════════════════════ */
+const STORAGE_KEY = 'arkyl_responses';
+
+function loadResponses() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveResponses(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+/* ══════════════════════════════════════════
+   SONDAGE
+══════════════════════════════════════════ */
+const order = ['q1','q2','q3','q4','q5'];
+const answers = {};
+
+document.querySelectorAll('.choices').forEach(container => {
+  const multi = container.dataset.multi === 'true';
+  container.querySelectorAll('.choice').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (!multi) {
+        container.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
+        chip.classList.toggle('selected');
+      } else {
+        chip.classList.toggle('selected');
+      }
+      const q = container.dataset.q;
+      const selected = [...container.querySelectorAll('.choice.selected')].map(c => c.dataset.val);
+      if (!answers[q]) answers[q] = {};
+      answers[q].chips = selected;
+    });
+  });
+});
+
+function updateProgress(qid) {
+  const idx = order.indexOf(qid) + 1;
+  document.getElementById('prog-current').textContent = idx;
+  document.getElementById('prog-fill').style.width = (idx / order.length * 100) + '%';
+}
+
+function next(from, to) {
+  const free = document.getElementById('free-' + from);
+  if (!answers[from]) answers[from] = {};
+  answers[from].free = free ? free.value.trim() : '';
+  document.getElementById(from).classList.remove('active');
+  document.getElementById(to).classList.add('active');
+  updateProgress(to);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prev(from, to) {
+  document.getElementById(from).classList.remove('active');
+  document.getElementById(to).classList.add('active');
+  updateProgress(to);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function submitSurvey() {
+  const free = document.getElementById('free-q5');
+  if (!answers['q5']) answers['q5'] = {};
+  answers['q5'].free = free ? free.value.trim() : '';
+
+  // Sauvegarder
+  const all = loadResponses();
+  all.push({ ts: Date.now(), answers: JSON.parse(JSON.stringify(answers)) });
+  saveResponses(all);
+
+  document.getElementById('q5').classList.remove('active');
+  document.querySelector('.progress-wrap').style.display = 'none';
+  document.getElementById('merci').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════
+   SECRET : 3 clics sur ARKYL
+══════════════════════════════════════════ */
+let clickCount = 0;
+let clickTimer = null;
+
+document.getElementById('logo').addEventListener('click', () => {
+  clickCount++;
+  const logo = document.getElementById('logo');
+  logo.classList.remove('flash');
+  void logo.offsetWidth; // reflow pour relancer l'animation
+  logo.classList.add('flash');
+
+  if (clickTimer) clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => { clickCount = 0; }, 1200);
+
+  if (clickCount >= 3) {
+    clickCount = 0;
+    openDash();
+  }
+});
+
+/* ══════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════ */
+const LABELS = {
+  q1: {
+    title: 'Avez-vous déjà acheté une œuvre artistique ?',
+    chips: {
+      oui: 'Oui',
+      non: 'Non, jamais',
+      envisage: "Pas encore, mais j'y pense"
+    }
+  },
+  q2: {
+    title: "Si oui — pourquoi l'avez-vous achetée ?",
+    chips: {
+      coup_coeur: 'Coup de cœur esthétique',
+      investissement: 'Investissement',
+      cadeau: 'Cadeau',
+      deco: 'Décorer mon espace',
+      artiste: 'Soutenir un artiste',
+      collection: 'Constituer une collection'
+    }
+  },
+  q3: {
+    title: "Où avez-vous fait (ou envisagez-vous de faire) cet achat ?",
+    chips: {
+      galerie: "Galerie d'art",
+      foire: 'Foire / salon d\'art',
+      en_ligne: 'Boutique en ligne',
+      atelier: "Directement chez l'artiste",
+      marche: 'Marché ou brocante',
+      ventes_aux_encheres: 'Ventes aux enchères',
+      reseaux_sociaux: 'Réseaux sociaux'
+    }
+  },
+  q4: {
+    title: "Qu'est-ce qui vous freine le plus pour acheter une œuvre ?",
+    chips: {
+      prix: 'Le prix trop élevé',
+      pas_espace: 'Pas d\'espace chez moi',
+      incertitude: "Je ne sais pas si l'œuvre prendra de la valeur",
+      confiance: "Manque de confiance en l'authenticité",
+      gout: 'Je ne sais pas ce qui me correspond',
+      processus: "Le processus d'achat est trop complexe",
+      livraison: 'La livraison / transport'
+    }
+  },
+  q5: {
+    title: "Quelle information vous rassurerait le plus avant d'acheter une œuvre ?",
+    chips: {
+      certificat: "Un certificat d'authenticité",
+      biographie: "La biographie et le parcours de l'artiste",
+      valeur: "L'évolution de la valeur de l'œuvre",
+      avis: "Des avis d'autres acheteurs",
+      retour: "Une politique de retour claire",
+      conseil: "Un conseil personnalisé d'un expert",
+      paiement: "Des options de paiement en plusieurs fois"
+    }
+  }
+};
+
+// Palette dorée dégradée pour les segments donut
+const PALETTE = ['#c49a4a','#ddb96a','#e8cc8a','#a07830','#f0dca0','#8a6020','#b08840'];
+
+function openDash() {
+  renderDash();
+  document.getElementById('dashboard').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDash() {
+  document.getElementById('dashboard').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function resetData() {
+  if (confirm('Effacer toutes les réponses ? Cette action est irréversible.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderDash();
+  }
+}
+
+function renderDash() {
+  const all = loadResponses();
+  const total = all.length;
+  const body = document.getElementById('dash-body');
+
+  // Calculer dernière réponse
+  let lastDate = '—';
+  if (total > 0) {
+    const d = new Date(all[all.length - 1].ts);
+    lastDate = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  // Compter toutes les chips par question
+  const counts = {};
+  order.forEach(q => { counts[q] = {}; });
+  all.forEach(r => {
+    order.forEach(q => {
+      const chips = r.answers[q]?.chips || [];
+      chips.forEach(v => {
+        counts[q][v] = (counts[q][v] || 0) + 1;
+      });
+    });
+  });
+
+  // Réponses libres
+  const frees = {};
+  ['q2','q4','q5'].forEach(q => {
+    frees[q] = all.map(r => r.answers[q]?.free).filter(Boolean);
+  });
+
+  let html = '';
+
+  // KPI
+  html += `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">Réponses totales</div></div>
+    <div class="kpi"><div class="kpi-val">${lastDate}</div><div class="kpi-lbl">Dernière réponse</div></div>
+    <div class="kpi"><div class="kpi-val">${total > 0 ? Math.round(total / Math.max(1, daysSince(all[0].ts))) : 0}/j</div><div class="kpi-lbl">Moy. par jour</div></div>
+  </div>`;
+
+  if (total === 0) {
+    html += `<p style="color:#3a342c;font-style:italic;text-align:center;margin-top:3rem;">Aucune réponse enregistrée pour le moment.</p>`;
+    body.innerHTML = html;
+    return;
+  }
+
+  // Q1 — donut
+  html += buildSection('q1', counts, total, frees, true);
+  // Q2—Q5 — barres
+  ['q2','q3','q4','q5'].forEach(q => {
+    html += buildSection(q, counts, total, frees, false);
+  });
+
+  body.innerHTML = html;
+
+  // Dessiner les donuts après injection
+  renderDonut('donut-q1', counts['q1'], LABELS.q1.chips);
+}
+
+function daysSince(ts) {
+  return Math.max(1, Math.round((Date.now() - ts) / 86400000));
+}
+
+function buildSection(q, counts, total, frees, donut) {
+  const meta = LABELS[q];
+  const chipCounts = counts[q];
+  const keys = Object.keys(meta.chips);
+
+  // Nombre de répondants à cette question
+  const respondents = Object.values(chipCounts).reduce((a,b) => a+b, 0) || 0;
+  // Pour Q1 single-select: total répondants = total sondages
+  const base = (q === 'q1') ? total : respondents;
+
+  let html = `<div class="dash-section">
+    <div class="dash-section-title">Question ${q.slice(1).padStart(2,'0')}</div>
+    <div class="dash-q-label">${meta.title}</div>`;
+
+  if (donut) {
+    // Donut
+    html += `<div class="donut-wrap">
+      <svg id="donut-${q}" width="160" height="160" viewBox="0 0 160 160"></svg>
+      <div class="donut-legend" id="legend-${q}">`;
+    keys.forEach((k, i) => {
+      const cnt = chipCounts[k] || 0;
+      const pct = base > 0 ? Math.round(cnt / base * 100) : 0;
+      html += `<div class="legend-item">
+        <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
+        <span>${meta.chips[k]}</span>
+        <span style="margin-left:auto;color:${PALETTE[i % PALETTE.length]};font-weight:500">${pct}%</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  } else {
+    // Barres
+    // Trier par count desc
+    const sorted = keys.map(k => ({ k, cnt: chipCounts[k] || 0 }))
+                       .sort((a,b) => b.cnt - a.cnt);
+    const max = sorted[0]?.cnt || 1;
+    sorted.forEach(({ k, cnt }) => {
+      const pct = base > 0 ? Math.round(cnt / base * 100) : 0;
+      const barW = Math.round(cnt / max * 100);
+      html += `<div class="bar-row">
+        <div class="bar-label" title="${meta.chips[k]}">${meta.chips[k]}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div>
+        <div class="bar-pct">${pct}%</div>
+        <div class="bar-count">${cnt}</div>
+      </div>`;
+    });
+  }
+
+  // Réponses libres
+  if (frees[q] && frees[q].length > 0) {
+    html += `<div style="margin-top:1.4rem;">
+      <div class="free-label" style="color:#4a4035;margin-bottom:.7rem;">Réponses libres (${frees[q].length})</div>
+      <ul class="free-list">`;
+    frees[q].forEach(f => { html += `<li>"${escHtml(f)}"</li>`; });
+    html += `</ul></div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function renderDonut(svgId, chipCounts, labelsMap) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const keys = Object.keys(labelsMap);
+  const vals = keys.map(k => chipCounts[k] || 0);
+  const sum = vals.reduce((a,b) => a+b, 0);
+  if (sum === 0) {
+    svg.innerHTML = `<text x="80" y="85" text-anchor="middle" fill="#3a342c" font-size="12" font-family="DM Sans">Aucune donnée</text>`;
+    return;
+  }
+
+  const cx = 80, cy = 80, R = 70, r = 42;
+  let startAngle = -Math.PI / 2;
+  let paths = '';
+
+  vals.forEach((v, i) => {
+    if (v === 0) return;
+    const angle = (v / sum) * 2 * Math.PI;
+    const endAngle = startAngle + angle;
+    const x1 = cx + R * Math.cos(startAngle), y1 = cy + R * Math.sin(startAngle);
+    const x2 = cx + R * Math.cos(endAngle),   y2 = cy + R * Math.sin(endAngle);
+    const ix1 = cx + r * Math.cos(startAngle), iy1 = cy + r * Math.sin(startAngle);
+    const ix2 = cx + r * Math.cos(endAngle),   iy2 = cy + r * Math.sin(endAngle);
+    const lg = angle > Math.PI ? 1 : 0;
+    paths += `<path d="M${x1},${y1} A${R},${R} 0 ${lg},1 ${x2},${y2} L${ix2},${iy2} A${r},${r} 0 ${lg},0 ${ix1},${iy1} Z"
+      fill="${PALETTE[i % PALETTE.length]}" stroke="#0e0c0a" stroke-width="2"/>`;
+    startAngle = endAngle;
+  });
+
+  svg.innerHTML = paths +
+    `<text x="${cx}" y="${cy - 6}" text-anchor="middle" fill="${PALETTE[0]}"
+      font-family="Playfair Display,serif" font-size="22">${sum}</text>
+     <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="#4a4035"
+      font-family="DM Sans,sans-serif" font-size="9" letter-spacing="1">VOTES</text>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
