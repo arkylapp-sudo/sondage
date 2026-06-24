@@ -792,8 +792,20 @@ function closeDash() {
   document.getElementById('dashboard').classList.remove('open');
   document.body.style.overflow = '';
 }
-function resetData() {
-  alert('La suppression des données se fait directement dans la base de données Render.');
+async function resetData() {
+  if (!confirm('Effacer toutes les réponses ? Cette action est irréversible.')) return;
+  const res = await fetch(API_BASE + '?action=reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert('Données effacées avec succès.');
+    renderDash();
+  } else {
+    alert('Erreur lors de la suppression.');
+  }
 }
 
 async function renderDash() {
@@ -966,4 +978,5 @@ function escHtml(s) {
 </script>
 </body>
 </html>
+
 
